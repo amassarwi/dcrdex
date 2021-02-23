@@ -7,6 +7,39 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v3"
 )
 
+// AccountDisable is used to disable an account by given host and application
+// password.
+func (c *Core) AccountDisable(pw []byte, host string) error {
+	_, err := c.encryptionKey(pw)
+	if err != nil {
+		return codedError(passwordErr, err)
+	}
+	_, err = addrHost(host)
+	if err != nil {
+		return newError(addressParseErr, "error parsing address: %v", err)
+	}
+
+	// Get the dexConnection.
+	c.connMtx.RLock()
+	dc, found := c.conns[host]
+	if !found {
+		return newError(unknownDEXErr, "DEX: %s", host)
+	}
+
+	acctInfo, err := c.db.Account(dc.acct.host)
+	if err != nil {
+		return newError(accountRetrieveErr, "Error retrieving account: %v", err)
+	}
+	err = c.db.DisableAccount(acctInfo)
+	if err != nil {
+		return newError(accountDisableErr, "Error disabling account: %v", err)
+	}
+	c.conns[host].connMaster.Disconnect()
+	delete(c.conns, host)
+
+	return nil
+}
+
 // AccountExport is used to retrieve account by host for export.
 func (c *Core) AccountExport(pw []byte, host string) (*Account, error) {
 	crypter, err := c.encryptionKey(pw)
@@ -31,7 +64,7 @@ func (c *Core) AccountExport(pw []byte, host string) (*Account, error) {
 		return nil, codedError(acctKeyErr, err)
 	}
 	dc.acct.keyMtx.RLock()
-	accountId := dc.acct.id.String()
+	accountID := dc.acct.id.String()
 	privKey := hex.EncodeToString(dc.acct.privKey.Serialize())
 	dc.acct.keyMtx.RUnlock()
 
@@ -41,16 +74,15 @@ func (c *Core) AccountExport(pw []byte, host string) (*Account, error) {
 		accountProof, err := c.db.AccountProof(host)
 		if err != nil {
 			return nil, codedError(accountProofErr, err)
-		} else {
-			feeProofSig = hex.EncodeToString(accountProof.Sig)
-			feeProofStamp = accountProof.Stamp
 		}
+		feeProofSig = hex.EncodeToString(accountProof.Sig)
+		feeProofStamp = accountProof.Stamp
 	}
 
 	// Account ID is exported for informational purposes only, it is not used during import.
 	acct := &Account{
 		Host:          host,
-		AccountID:     accountId,
+		AccountID:     accountID,
 		PrivKey:       privKey,
 		DEXPubKey:     hex.EncodeToString(dc.acct.dexPubKey.SerializeCompressed()),
 		Cert:          hex.EncodeToString(dc.acct.cert),

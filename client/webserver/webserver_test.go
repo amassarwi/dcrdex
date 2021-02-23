@@ -446,7 +446,7 @@ func TestAPIGetFee(t *testing.T) {
 		ensureResponse(t, s.apiGetFee, want, reader, writer, body)
 	}
 
-	body = &registration{Addr: "somedexaddress.org"}
+	body = &registrationForm{Addr: "somedexaddress.org"}
 	ensure(`{"ok":true,"fee":100000000}`)
 
 	// getFee error

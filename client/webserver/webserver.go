@@ -92,6 +92,7 @@ type clientCore interface {
 	MaxSell(host string, base, quote uint32) (*core.OrderEstimate, error)
 	AccountExport(pw []byte, host string) (*core.Account, error)
 	AccountImport(pw []byte, account core.Account) error
+	AccountDisable(pw []byte, host string) error
 }
 
 var _ clientCore = (*core.Core)(nil)
@@ -266,6 +267,7 @@ func New(core clientCore, addr string, logger dex.Logger, reloadHTML bool) (*Web
 			apiAuth.Post("/maxsell", s.apiMaxSell)
 			apiAuth.Post("/exportaccount", s.apiAccountExport)
 			apiAuth.Post("/importaccount", s.apiAccountImport)
+			apiAuth.Post("/disableaccount", s.apiAccountDisable)
 		})
 	})
 
