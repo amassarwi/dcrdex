@@ -21,6 +21,7 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 
 	// Get the dexConnection.
 	c.connMtx.RLock()
+	defer c.connMtx.RUnlock()
 	dc, found := c.conns[host]
 	if !found {
 		return newError(unknownDEXErr, "DEX: %s", host)
@@ -34,7 +35,7 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 	if err != nil {
 		return newError(accountDisableErr, "Error disabling account: %v", err)
 	}
-	c.conns[host].connMaster.Disconnect()
+	dc.connMaster.Disconnect()
 	delete(c.conns, host)
 
 	return nil
