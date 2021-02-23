@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"decred.org/dcrdex/client/db"
 	"github.com/decred/dcrd/dcrec/secp256k1/v3"
@@ -10,10 +11,13 @@ import (
 // AccountDisable is used to disable an account by given host and application
 // password.
 func (c *Core) AccountDisable(pw []byte, host string) error {
+	// Validate password.
 	_, err := c.encryptionKey(pw)
 	if err != nil {
 		return codedError(passwordErr, err)
 	}
+
+	// Parse address.
 	_, err = addrHost(host)
 	if err != nil {
 		return newError(addressParseErr, "error parsing address: %v", err)
@@ -25,6 +29,11 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 	dc, found := c.conns[host]
 	if !found {
 		return newError(unknownDEXErr, "DEX: %s", host)
+	}
+
+	// Check active orders.
+	if dc.hasActiveOrders() {
+		return fmt.Errorf("cannot disable account with active orders")
 	}
 
 	acctInfo, err := c.db.Account(dc.acct.host)

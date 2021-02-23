@@ -151,6 +151,7 @@ func (c *TCore) AccountExport(pw []byte, host string) (*core.Account, error) {
 func (c *TCore) AccountImport(pw []byte, account core.Account) error {
 	return nil
 }
+func (c *TCore) AccountDisable(pw []byte, host string) error { return nil }
 
 type TWriter struct {
 	b []byte
