@@ -149,7 +149,6 @@ export default class SettingsPage extends BasePage {
       pw,
       host
     }
-    console.log({ pw })
     const loaded = app.loading(this.body)
     const res = await postJSON('/api/disableaccount', req)
     loaded()
@@ -158,6 +157,8 @@ export default class SettingsPage extends BasePage {
       Doc.show(page.disableAccountErr)
     }
     Doc.hide(page.forms)
+    // Initial method of removing disabled account.
+    window.location.reload()
   }
 
   async onAccountFileChange () {
