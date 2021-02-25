@@ -18,7 +18,7 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 	}
 
 	// Parse address.
-	_, err = addrHost(host)
+	addr, err := addrHost(host)
 	if err != nil {
 		return newError(addressParseErr, "error parsing address: %v", err)
 	}
@@ -26,9 +26,9 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 	// Get the dexConnection.
 	c.connMtx.RLock()
 	defer c.connMtx.RUnlock()
-	dc, found := c.conns[host]
+	dc, found := c.conns[addr]
 	if !found {
-		return newError(unknownDEXErr, "DEX: %s", host)
+		return newError(unknownDEXErr, "DEX: %s", addr)
 	}
 
 	// Check active orders.
@@ -45,7 +45,7 @@ func (c *Core) AccountDisable(pw []byte, host string) error {
 		return newError(accountDisableErr, "Error disabling account: %v", err)
 	}
 	dc.connMaster.Disconnect()
-	delete(c.conns, host)
+	delete(c.conns, addr)
 
 	return nil
 }

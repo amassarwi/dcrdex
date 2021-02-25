@@ -88,6 +88,56 @@ func setupRigAccountProof(host string, rig *testRig) {
 	rig.db.accountProof = accountProof
 }
 
+func TestAccountDisable(t *testing.T) {
+	rig := newTestRig()
+	tCore := rig.core
+	host := tCore.conns[tDexHost].acct.host
+
+	err := tCore.AccountDisable(tPW, host)
+	if err != nil {
+		t.Fatalf("account disable error: %v", err)
+	}
+	if _, found := tCore.conns[host]; found {
+		t.Fatal("found disabled account dex connection")
+	}
+}
+
+func TestAccountDisablePasswordError(t *testing.T) {
+	rig := newTestRig()
+	tCore := rig.core
+	host := tCore.conns[tDexHost].acct.host
+	rig.crypter.recryptErr = tErr
+	err := tCore.AccountDisable(tPW, host)
+	if !errorHasCode(err, passwordErr) {
+		t.Fatalf("expected password error, actual error: '%v'", err)
+	}
+
+}
+
+func TestAccountDisableAddressError(t *testing.T) {
+	rig := newTestRig()
+	tCore := rig.core
+	host := ":bad:"
+	err := tCore.AccountDisable(tPW, host)
+	if !errorHasCode(err, addressParseErr) {
+		t.Fatalf("expected address parse error, actual error: '%v'", err)
+	}
+}
+
+func TestAccountDisableUnknownDEX(t *testing.T) {
+	rig := newTestRig()
+	tCore := rig.core
+	host := tCore.conns[tDexHost].acct.host
+	// Lose the dexConnection
+	tCore.connMtx.Lock()
+	delete(tCore.conns, tDexHost)
+	tCore.connMtx.Unlock()
+	err := tCore.AccountDisable(tPW, host)
+	if !errorHasCode(err, unknownDEXErr) {
+		t.Fatalf("expected unknown DEX error, actual error: '%v'", err)
+	}
+}
+
 func TestAccountExportPasswordError(t *testing.T) {
 	rig := newTestRig()
 	tCore := rig.core
@@ -130,7 +180,7 @@ func TestAccountExportAccountKeyError(t *testing.T) {
 	rig.crypter.decryptErr = tErr
 	_, err := tCore.AccountExport(tPW, host)
 	if !errorHasCode(err, acctKeyErr) {
-		t.Fatalf("expected password error, actual error: '%v'", err)
+		t.Fatalf("expected account key error, actual error: '%v'", err)
 	}
 }
 
